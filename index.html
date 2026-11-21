@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Missão Clima</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--foam:#f7fbf4;--sand:#ffd166;--ink:#10241a;--disp:'Fredoka','Trebuchet MS',system-ui,sans-serif;--body:'Atkinson Hyperlegible',system-ui,sans-serif}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%}
+body{font-family:var(--body);color:var(--foam);background:#052e16;overflow:hidden}
+:focus-visible{outline:3px solid #fff;outline-offset:3px}
+#scroller{position:fixed;inset:0;overflow-y:auto;overflow-x:hidden;scrollbar-width:none}
+#scroller::-webkit-scrollbar{display:none}
+#ocean{position:relative;min-height:100%;padding:96px 0 190px;overflow:hidden;background:#14532d}
+#ocean.shake{animation:quake .5s}
+@keyframes quake{20%{transform:translate(-8px,4px)}40%{transform:translate(8px,-4px)}60%{transform:translate(-6px,3px)}80%{transform:translate(5px,-2px)}}
+#world{position:relative;width:min(100%,440px);margin:0 auto;aspect-ratio:400/1120;container-type:inline-size}
+#trail{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.amb{position:absolute;font-size:5.5cqw;pointer-events:none;animation:drift ease-in-out infinite}
+@keyframes drift{0%{transform:translate(0,0) rotate(0);opacity:0}20%{opacity:.85}100%{transform:translate(28px,-50px) rotate(40deg);opacity:0}}
+.zone{position:absolute;background:rgba(6,20,14,.62);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);padding:5px 14px;border-radius:999px;font:600 .95rem var(--disp);z-index:2}
+.node{position:absolute;width:13.5%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;display:grid;place-items:center;font-size:6.2cqw;z-index:1;
+  background:radial-gradient(circle at 35% 28%,rgba(255,255,255,.75),var(--c) 62%);box-shadow:0 0 0 3px rgba(255,255,255,.65),0 0 16px var(--c),0 6px 10px rgba(0,0,0,.3);transition:filter .4s,opacity .4s}
+.node.big{width:18%;font-size:8.5cqw}
+.node.done{filter:saturate(.4);opacity:.65}
+.node.pop{animation:pop .5s}
+@keyframes pop{40%{transform:translate(-50%,-50%) scale(1.4)}}
+#tok{position:absolute;width:15%;aspect-ratio:1;transform:translate(-50%,-50%);z-index:3;display:grid;place-items:center;font-size:8.5cqw;
+  transition:left .3s ease-in-out,top .3s ease-in-out;filter:drop-shadow(0 6px 5px rgba(0,0,0,.4))}
+#tok::before{content:"";position:absolute;inset:6%;border-radius:50%;border:3px solid var(--sand);animation:ring 1.8s ease-out infinite}
+@keyframes ring{from{transform:scale(.7);opacity:1}to{transform:scale(1.5);opacity:0}}
+#tok span{display:block;animation:bob 2.4s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-5px) rotate(4deg)}}
+
+#hud{position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;gap:8px;z-index:5;pointer-events:none;padding:max(12px,env(safe-area-inset-top)) 12px 0}
+.pill{background:rgba(6,20,14,.7);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-radius:999px;padding:7px 14px;color:var(--foam);
+  font:600 1.1rem var(--disp);display:flex;gap:7px;align-items:baseline;pointer-events:auto;border:0}
+.pill small{font:400 .8rem var(--body);opacity:.85}
+#hud>div{display:flex;gap:8px}
+#hud{flex-wrap:wrap}
+#heat{position:fixed;inset:0;z-index:4;pointer-events:none;opacity:0;transition:opacity 1.2s;background:radial-gradient(ellipse at 50% 115%,rgba(255,90,20,.6),rgba(255,40,0,.22) 55%,transparent 80%)}
+#mute{cursor:pointer}
+#dock{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:center;z-index:5;pointer-events:none;padding:36px 0 max(16px,env(safe-area-inset-bottom));background:linear-gradient(transparent,rgba(4,16,10,.65))}
+.cta{pointer-events:auto;display:inline-flex;align-items:center;justify-content:center;gap:14px;border:0;cursor:pointer;background:var(--sand);color:var(--ink);
+  font:700 1.2rem var(--disp);padding:12px 28px;border-radius:999px;box-shadow:0 7px 0 #c9962b,0 14px 24px rgba(0,0,0,.35);transition:transform .12s,box-shadow .12s}
+.cta:active:not(:disabled){transform:translateY(5px);box-shadow:0 2px 0 #c9962b,0 6px 12px rgba(0,0,0,.35)}
+.cta:disabled{filter:saturate(.3) brightness(.85);cursor:default}
+#die{padding:8px 28px 8px 16px}
+#face{font-size:2.8rem;line-height:1;display:inline-block}
+#face.rolling{animation:roll .5s linear infinite}
+@keyframes roll{to{transform:rotate(360deg) scale(1.15)}}
+
+#toast{position:fixed;top:74px;left:50%;z-index:8;transform:translate(-50%,-20px);opacity:0;pointer-events:none;background:rgba(6,20,14,.88);padding:10px 18px;border-radius:18px;font:600 1.05rem var(--disp);transition:opacity .25s,transform .35s cubic-bezier(.2,1.4,.4,1)}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+#banner{position:fixed;inset:0;z-index:12;display:grid;align-items:center;background:rgba(0,0,0,.4);opacity:0;pointer-events:none;transition:opacity .3s;cursor:pointer}
+#banner.show{opacity:1;pointer-events:auto}
+.bd{padding:34px 24px;text-align:center;background:linear-gradient(90deg,transparent,var(--zc) 12%,var(--zc) 88%,transparent);transform:translateX(-110%);transition:transform .6s cubic-bezier(.2,1,.3,1);text-shadow:0 2px 8px rgba(0,0,0,.4)}
+#banner.show .bd{transform:none}
+.bd .be{font-size:4rem;animation:float 2.6s ease-in-out infinite}
+.bd h2{font:700 clamp(2.2rem,9vw,3.6rem)/1.05 var(--disp)}
+.bd p{max-width:34ch;margin:10px auto 0;font-size:1.15rem;line-height:1.45}
+.bd small{display:block;margin-top:14px;opacity:.8}
+#modal{position:fixed;inset:0;display:grid;place-items:end center;background:rgba(2,10,6,.6);z-index:10;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);opacity:0;pointer-events:none;transition:opacity .25s}
+#modal.open{opacity:1;pointer-events:auto}
+#card{width:min(100%,560px);background:linear-gradient(#163b28,#0d281b);border-radius:28px 28px 0 0;padding:22px 20px max(22px,env(safe-area-inset-bottom));box-shadow:0 -10px 40px rgba(0,0,0,.5);transform:translateY(60px);transition:transform .4s cubic-bezier(.2,1.2,.4,1);max-height:92vh;overflow:auto}
+#modal.open #card{transform:none}
+@media(min-width:640px){#modal{place-items:center}#card{border-radius:28px}}
+.chip{display:inline-flex;font:600 .95rem var(--disp);padding:5px 14px;border-radius:999px;background:var(--c);color:var(--ink)}
+#qtext{font:600 1.4rem/1.3 var(--disp);margin:14px 0 6px}
+.opt{display:block;width:100%;text-align:left;margin-top:10px;padding:14px 16px;border-radius:16px;cursor:pointer;border:2px solid rgba(255,255,255,.22);background:rgba(255,255,255,.08);color:var(--foam);font:700 1.05rem var(--body);transition:transform .12s,background .2s,border-color .2s}
+.opt:hover:not(:disabled){transform:translateX(4px);border-color:var(--sand)}
+.opt.ok{background:#16a34a;border-color:#86efac}
+.opt.bad{background:#be123c;border-color:#fda4af;animation:shake .4s}
+.opt:disabled:not(.ok):not(.bad){opacity:.4}
+@keyframes shake{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+#opts.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(105px,1fr));gap:10px}
+#opts.grid .opt{margin:0;text-align:center;padding:14px 8px;animation:deal .5s backwards}
+#opts.grid .opt:hover:not(:disabled){transform:translateY(-5px) rotate(-2deg)}
+#opts.grid .e{display:block;font-size:2.8rem;margin-bottom:4px}
+@keyframes deal{from{opacity:0;transform:translateY(30px) rotate(8deg)}}
+#fb{display:grid;grid-template-rows:0fr;transition:grid-template-rows .35s}
+#fb.show{grid-template-rows:1fr}
+#fb>div{overflow:hidden}
+#fb h3{font:700 1.25rem var(--disp);margin-top:16px}
+#fb p{margin-top:4px;line-height:1.5}
+#next{width:100%;margin-top:16px}
+
+#screen{position:fixed;inset:0;z-index:20;display:grid;place-items:center;text-align:center;padding:24px;overflow:auto;background:linear-gradient(180deg,#0369a1,#c2410c 50%,#15803d);transition:opacity .7s,visibility .7s}
+#screen.hide{opacity:0;visibility:hidden}
+#screen .in{max-width:540px;display:flex;flex-direction:column;align-items:center;gap:16px}
+#screen h1{font:700 clamp(2.4rem,10vw,4rem)/1.02 var(--disp)}
+#screen p{font-size:1.15rem;line-height:1.5;max-width:36ch}
+#screen .lg{font-size:.95rem;opacity:.9}
+.turtle{font-size:5.5rem;animation:float 3.2s ease-in-out infinite;filter:drop-shadow(0 12px 8px rgba(0,0,0,.3))}
+@keyframes float{50%{transform:translateY(-14px) rotate(-5deg)}}
+.avs{display:flex;gap:10px}
+.av{font-size:2rem;width:62px;height:62px;border-radius:50%;border:3px solid transparent;background:rgba(255,255,255,.18);cursor:pointer;transition:transform .15s}
+.av:hover{transform:scale(1.12)}
+.av[aria-pressed=true]{border-color:var(--sand);background:rgba(255,255,255,.35);transform:scale(1.12)}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+<div id="scroller"><div id="ocean"><div id="world">
+  <svg id="trail" viewBox="0 0 400 1120" preserveAspectRatio="none" aria-hidden="true">
+    <path id="lane" fill="none" stroke="rgba(255,255,255,.2)" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
+    <path id="dash" fill="none" stroke="rgba(255,255,255,.45)" stroke-width="3" stroke-dasharray="2 11" stroke-linecap="round"/>
+    <path id="prog" fill="none" stroke="#ffd166" stroke-width="6" stroke-linecap="round" style="transition:stroke-dashoffset .35s;filter:drop-shadow(0 0 5px #ffd166)"/>
+  </svg>
+  <div id="tok"><span>🐢</span></div>
+</div></div></div>
+
+<div id="hud">
+  <div><div class="pill"><b id="score">0</b><small>pontos</small><span id="combo"></span></div><div class="pill"><b id="temp" style="color:#86efac">🌡️ +1,1 °C</b></div></div>
+  <div><div class="pill"><small>📓</small><b id="album">0/0</b></div><button class="pill" id="mute" aria-label="Ligar ou desligar o som">🔊</button></div>
+</div>
+<div id="heat"></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<div id="dock"><button class="cta" id="die"><span id="face" aria-hidden="true">⚀</span><span>Rolar o dado</span></button></div>
+
+<div id="banner"><div class="bd"><div class="be" id="be"></div><h2 id="bn"></h2><p id="bf"></p><small>Toque para continuar</small></div></div>
+
+<div id="modal"><div id="card" role="dialog" aria-modal="true" aria-labelledby="qtext">
+  <span class="chip" id="chip"></span><h2 id="qtext"></h2><div id="opts"></div>
+  <div id="fb"><div><h3 id="fbh"></h3><p id="fbp"></p><button class="cta" id="next">Continuar</button></div></div>
+</div></div>
+
+<div id="screen"><div class="in">
+  <div class="turtle" id="pv">🐢</div>
+  <h1 id="sh">Missão Clima</h1>
+  <p id="sp">Role o dado, percorra sete etapas da história do clima e descubra causas, impactos e soluções. Cuidado com o termômetro do planeta!</p>
+  <div class="avs" id="avs" role="group" aria-label="Escolha seu personagem"></div>
+  <button class="cta" id="sb">Começar a missão</button>
+  <p class="lg">📖 pergunta · 🎯 qual destes? · 🔮 verdadeiro ou falso · ⚠️ risco · 🌱 ação</p>
+</div></div>
+
+<script>
+const Z=[
+ {n:"Efeito estufa",i:"🌍",c:["#075985","#0ea5e9"],a:["☁️","☀️"],f:"Gases como o CO₂ e o metano retêm calor na atmosfera. Um pouco desse efeito é natural e necessário; o problema é o excesso."},
+ {n:"Fontes de emissão",i:"🏭",c:["#78350f","#b45309"],a:["💨","🏭","🌫️"],f:"Queimar petróleo, carvão e gás, desmatar e certas atividades agropecuárias lançam gases na atmosfera."},
+ {n:"Oceanos e gelo",i:"🧊",c:["#155e75","#67e8f9"],a:["❄️","🫧","🧊"],f:"Os oceanos absorvem calor e CO₂; as geleiras derretem e o nível do mar sobe."},
+ {n:"Eventos extremos",i:"⛈️",c:["#312e81","#475569"],a:["⛈️","💧","⚡"],f:"Ondas de calor, secas e chuvas intensas tendem a ficar mais frequentes ou mais fortes."},
+ {n:"Florestas",i:"🌳",c:["#14532d","#16a34a"],a:["🍃","🌳","🦋"],f:"Florestas guardam carbono e abrigam espécies, mas o aquecimento ameaça seu equilíbrio."},
+ {n:"Cidades",i:"🏙️",c:["#334155","#64748b"],a:["🌇","🚲","☁️"],f:"Cidades concentram pessoas e emissões, mas também podem liderar soluções."},
+ {n:"Soluções",i:"☀️",c:["#0f766e","#facc15"],a:["☀️","🌱","⚡"],f:"Reduzir emissões e se adaptar: escolhas individuais e ações coletivas somam a diferença."}];
+// a resposta certa é sempre a 1ª opção; o jogo embaralha ao exibir
+const q=(p,o,e,s)=>({t:"q",p,o,r:0,e,s}),a=(p,o,e)=>({t:"a",p,o,r:0,e,s:o[0]}),
+ c=(p,v,e)=>({t:"c",p,o:["Verdadeiro","Falso"],r:v?0:1,e}),r=(p,e)=>({t:"r",p,e}),pr=(p,e)=>({t:"p",p,e});
+const D=[{t:"s"},
+ q("O que é o efeito estufa?",["Retenção de calor na atmosfera por certos gases","Uma estufa gigante para plantas","A queda de neve nos polos"],"Gases como o CO₂ e o metano seguram parte do calor do planeta. O efeito natural é essencial à vida; o excesso, causado pelas atividades humanas, aquece demais a Terra.","🌍 Efeito estufa"),
+ a("Qual destes é um gás de efeito estufa?",["🏭 Dióxido de carbono","🎈 Gás hélio","🧊 Gás nitrogênio"],"O dióxido de carbono (CO₂) retém calor e é liberado, por exemplo, na queima de combustíveis."),
+ r("Excesso de gases na atmosfera","Quando a concentração de gases de efeito estufa cresce, a atmosfera retém mais calor e a temperatura média do planeta sobe."),
+ q("Qual atividade humana é a maior fonte de CO₂ no mundo?",["Queima de petróleo, carvão e gás","Respiração dos animais","Marés do oceano"],"A queima de combustíveis fósseis em transporte, indústria e geração de energia é a principal fonte de CO₂ causada pelas pessoas.","🛢️ Combustíveis fósseis"),
+ c("Desmatar uma floresta pode aumentar as emissões de CO₂.",1,"As árvores guardam carbono. Ao serem derrubadas ou queimadas, parte desse carbono volta à atmosfera."),
+ pr("Eficiência energética","Usar lâmpadas LED, aparelhos econômicos e desligar o que não está em uso reduz o consumo de energia e as emissões."),
+ a("Qual animal libera muito metano na digestão e está ligado às emissões da pecuária?",["🐄 Boi","🐟 Peixe","🦜 Arara"],"Bois e vacas liberam metano ao digerir o capim; por isso a pecuária é uma fonte importante desse gás."),
+ q("Por que o nível do mar está subindo?",["Derretimento de geleiras e expansão da água que esquenta","Mais chuva nos desertos","Mais peixes nos oceanos"],"O gelo que estava sobre a terra derrete e vai para o mar, e a água mais quente ocupa mais espaço.","🌊 Nível do mar"),
+ r("Branqueamento dos corais","Com a água mais quente, os corais expulsam as algas que lhes dão cor e alimento e podem morrer, afetando muitos peixes."),
+ c("Os oceanos absorvem parte do CO₂ emitido pelas atividades humanas.",1,"Isso reduz o CO₂ no ar, mas deixa a água mais ácida, o que prejudica corais e animais com concha."),
+ a("Qual animal do Ártico perde seu gelo de caça com o aquecimento?",["🐻‍❄️ Urso-polar","🦘 Canguru","🐘 Elefante"],"Ursos-polares caçam focas sobre o gelo marinho; com menos gelo, ficam com menos alimento."),
+ q("O que é uma onda de calor?",["Vários dias com temperaturas muito acima do normal","Uma onda do mar muito quente","Um vento forte e frio"],"Elas ficam mais frequentes e intensas com o aquecimento global e afetam a saúde, a agricultura e o consumo de energia.","🔥 Onda de calor"),
+ r("Chuvas intensas e enchentes","Em áreas sem drenagem e com encostas desmatadas, chuvas fortes provocam enchentes e deslizamentos."),
+ a("Qual instrumento mede a quantidade de chuva?",["🪣 Pluviômetro","🌡️ Termômetro","🧭 Bússola"],"O pluviômetro registra quantos milímetros de chuva caíram, e esses dados ajudam a emitir alertas."),
+ pr("Alertas e planos de emergência","Conhecer os alertas da Defesa Civil e ter um plano de evacuação salva vidas quando acontece um evento extremo."),
+ q("Como as florestas ajudam o clima?",["Absorvem CO₂ na fotossíntese e guardam carbono","Produzem petróleo","Esquentam o ar para formar nuvens"],"Na fotossíntese, as plantas retiram CO₂ do ar e guardam carbono em troncos, folhas e solo.","🌳 Fotossíntese e carbono"),
+ c("Espécies de animais e plantas podem ser ameaçadas quando o clima muda rápido.",1,"Muitas dependem de temperatura e chuva específicas; se o clima muda depressa, algumas não conseguem se adaptar."),
+ r("Mais secas e incêndios","Florestas mais secas queimam com mais facilidade, liberando carbono e destruindo habitats."),
+ pr("Restauração com espécies nativas","Replantar vegetação nativa devolve habitat aos animais e volta a retirar carbono do ar."),
+ c("Árvores e áreas verdes podem deixar a cidade mais fresca.",1,"A sombra e a transpiração das plantas reduzem a temperatura e ajudam a combater as ilhas de calor."),
+ q("O que é uma 'ilha de calor' urbana?",["Área da cidade mais quente por causa de asfalto, concreto e poucas árvores","Uma ilha tropical no meio do mar","Uma piscina aquecida"],"Asfalto e concreto absorvem calor e o liberam depois, deixando partes da cidade mais quentes.","🏙️ Ilha de calor"),
+ pr("Transporte coletivo e bicicleta","Ônibus, metrô, bicicleta e caminhadas emitem menos CO₂ por pessoa do que carros individuais."),
+ r("Lixo e consumo excessivo","Produzir, transportar e descartar produtos gasta energia, e o lixo em aterros pode liberar metano."),
+ a("Qual destas é uma fonte de energia renovável?",["☀️ Energia solar","🛢️ Petróleo","🪨 Carvão mineral"],"A luz do sol é inesgotável e gera eletricidade sem emitir CO₂ durante o funcionamento."),
+ pr("Energia limpa em casa e na escola","Painéis solares e outras fontes renováveis ajudam a trocar combustíveis fósseis por energia com poucas emissões."),
+ q("Qual atitude ajuda a reduzir as emissões?",["Reduzir, reutilizar e reciclar, evitando o desperdício","Deixar as luzes acesas","Usar mais plástico descartável"],"Quanto menos desperdício, menos energia e recursos são gastos para produzir, transportar e descartar as coisas.","♻️ Reduzir, reutilizar, reciclar"),
+ {t:"f"}];
+const N=D.length,W=400,H=1120,XS=[62,154,246,338];
+const ICON={s:"🚩",q:"📖",a:"🎯",c:"🔮",r:"⚠️",p:"🌱",f:"🏁"},COL={s:"#ffe8a3",q:"#38bdf8",a:"#fbbf24",c:"#a78bfa",r:"#f87171",p:"#4ade80",f:"#ffd166"};
+const LAB={q:"📖 Pergunta",a:"🎯 Qual destes?",c:"🔮 Verdadeiro ou falso",r:"⚠️ Risco",p:"🌱 Ação de proteção"};
+const $=s=>document.querySelector(s),sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const P=i=>{const r=i>>2,c=i&3,col=r%2?3-c:c;return{x:XS[col],y:100+r*150}};
+const sc=$("#scroller"),world=$("#world"),tok=$("#tok"),prog=$("#prog"),TOT=D.filter(x=>x.s).length;
+let pos=0,score=0,streak=0,busy=false,L=0,lens=[],nodes=[],av="🐢",seen=new Set,got=new Set,AC,mute=false;
+
+function sfx(notes,t=.12){if(mute)return;try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();
+  notes.forEach((f,i)=>{const o=AC.createOscillator(),g=AC.createGain(),s=AC.currentTime+i*t;o.type="triangle";o.frequency.value=f;
+  g.gain.setValueAtTime(.06,s);g.gain.exponentialRampToValueAtTime(.001,s+t*.95);o.connect(g);g.connect(AC.destination);o.start(s);o.stop(s+t)})}catch(e){}}
+$("#mute").onclick=()=>{mute=!mute;$("#mute").textContent=mute?"🔇":"🔊"};
+
+(function build(){
+  let d=`M${P(0).x} ${P(0).y}`;
+  for(let i=1;i<N;i++){const A=P(i-1),B=P(i);
+    if(A.y===B.y)d+=` L${B.x} ${B.y}`;else{const k=A.x>200?55:-55;d+=` C${A.x+k} ${A.y} ${B.x+k} ${B.y} ${B.x} ${B.y}`}}
+  ["#lane","#dash","#prog"].forEach(s=>$(s).setAttribute("d",d));
+  L=prog.getTotalLength();prog.style.strokeDasharray=L;
+  for(let i=0;i<N;i++){let best=0,bd=1e9;
+    for(let l=0;l<=L;l+=3){const p=prog.getPointAtLength(l),dd=(p.x-P(i).x)**2+(p.y-P(i).y)**2;if(dd<bd){bd=dd;best=l}}
+    lens.push(best);
+    const n=document.createElement("div"),t=D[i].t;
+    n.className="node"+(t==="s"||t==="f"?" big":"");n.textContent=ICON[t];n.style.setProperty("--c",COL[t]);
+    n.style.left=P(i).x/W*100+"%";n.style.top=P(i).y/H*100+"%";world.appendChild(n);nodes.push(n)}
+  Z.forEach((z,ro)=>{
+    const l=document.createElement("span");l.className="zone";l.textContent=z.i+" "+z.n;
+    l.style[ro%2?"left":"right"]="3%";l.style.top=(100+150*ro-70)/H*100+"%";world.appendChild(l);
+    for(let k=0;k<7;k++){const s=document.createElement("span");s.className="amb";s.textContent=z.a[k%z.a.length];
+      s.style.cssText=`left:${Math.random()*92}%;top:${(100+150*ro-65+Math.random()*130)/H*100}%;animation-duration:${6+Math.random()*7}s;animation-delay:-${Math.random()*9}s`;world.appendChild(s)}});
+  const box=$("#avs");["🐢","🦜","🐧","🐆"].forEach(e=>{const b=document.createElement("button");b.className="av";b.textContent=e;b.setAttribute("aria-pressed",e===av);
+    b.onclick=()=>{av=e;$("#pv").textContent=e;tok.firstChild.textContent=e;[...box.children].forEach(x=>x.setAttribute("aria-pressed",x===b))};box.appendChild(b)});
+  $("#album").textContent="0/"+TOT;
+})();
+function paintBg(){const o=$("#ocean"),h=o.scrollHeight;
+  const st=Z.flatMap((z,i)=>{const y=(world.offsetTop+(100+150*i)/H*world.offsetHeight)/h*100;return[`${z.c[0]} ${(y-3).toFixed(1)}%`,`${z.c[1]} ${(y+3).toFixed(1)}%`]});
+  o.style.background=`linear-gradient(180deg,${Z[0].c[0]} 0,${st.join(",")},${Z[6].c[1]} 100%)`}
+paintBg();addEventListener("resize",paintBg);
+
+function place(){
+  const p=P(pos);tok.style.left=p.x/W*100+"%";tok.style.top=p.y/H*100+"%";
+  prog.style.strokeDashoffset=L-lens[pos];nodes.forEach((n,i)=>n.classList.toggle("done",i<pos));
+  sc.scrollTo({top:world.offsetTop+p.y/H*world.offsetHeight-sc.clientHeight*.42,behavior:"smooth"})}
+async function step(n){
+  const dir=n>0?1:-1;
+  for(let k=0;k<Math.abs(n);k++){const np=Math.max(0,Math.min(N-1,pos+dir));if(np===pos)break;
+    pos=np;place();sfx([300+pos*14],.08);
+    tok.animate([{transform:"translate(-50%,-50%)"},{transform:"translate(-50%,-85%) scale(1.15)"},{transform:"translate(-50%,-50%)"}],{duration:300});await sleep(310)}
+  nodes[pos].classList.remove("pop");void nodes[pos].offsetWidth;nodes[pos].classList.add("pop");await sleep(200);
+  if(dir>0)await entrada()}
+async function entrada(){
+  const z=pos>>2;if(seen.has(z))return;seen.add(z);
+  $("#banner").style.setProperty("--zc",Z[z].c[0]);$("#be").textContent=Z[z].i;$("#bn").textContent=Z[z].n;$("#bf").textContent=Z[z].f;
+  sfx([392,494,587,784],.14);$("#banner").classList.add("show");
+  await Promise.race([sleep(4200),new Promise(r=>$("#banner").onclick=r)]);$("#banner").classList.remove("show");await sleep(450)}
+function setScore(v){score=v;const s=$("#score");s.textContent=v;s.animate([{transform:"scale(1)"},{transform:"scale(1.4)"},{transform:"scale(1)"}],{duration:350});
+  $("#combo").textContent=streak>=2?"🔥×"+streak:""}
+function burst(x,y,chars,n=14){
+  for(let i=0;i<n;i++){const s=document.createElement("span"),an=Math.random()*6.28,rr=60+Math.random()*130;
+    s.textContent=chars[i%chars.length];s.style.cssText=`position:fixed;left:${x}px;top:${y}px;font-size:${16+Math.random()*16}px;z-index:30;pointer-events:none`;
+    document.body.appendChild(s);
+    s.animate([{transform:"translate(-50%,-50%) scale(.4)",opacity:1},{transform:`translate(calc(-50% + ${Math.cos(an)*rr}px),calc(-50% + ${Math.sin(an)*rr-50}px)) scale(1.2)`,opacity:0}],
+      {duration:900+Math.random()*500,easing:"cubic-bezier(.2,.8,.3,1)"}).onfinish=()=>s.remove()}}
+let temp=1.1;
+function setTemp(d){temp=Math.max(1.1,+(temp+d).toFixed(1));const t=$("#temp");t.textContent="🌡️ +"+temp.toFixed(1).replace(".",",")+" °C";
+  t.style.color=temp<1.3?"#86efac":temp<1.5?"#fde047":"#fca5a5";t.animate([{transform:"scale(1)"},{transform:"scale(1.35)"},{transform:"scale(1)"}],{duration:400});
+  $("#heat").style.opacity=Math.min(.5,(temp-1.1)*.9)}
+function shake(){const o=$("#ocean");o.classList.add("shake");setTimeout(()=>o.classList.remove("shake"),500)}
+
+function abrir(d){const ch=$("#chip");ch.textContent=LAB[d.t];ch.style.setProperty("--c",COL[d.t]);$("#qtext").textContent=d.p;
+  $("#fb").classList.remove("show");$("#opts").innerHTML="";$("#opts").className=d.t==="a"?"grid":"";$("#modal").classList.add("open")}
+async function fechar(){await new Promise(res=>$("#next").onclick=res);$("#modal").classList.remove("open");await sleep(350)}
+async function pergunta(d){
+  abrir(d);const box=$("#opts"),idx=d.o.map((_,i)=>i);
+  if(d.t!=="c")idx.sort(()=>Math.random()-.5);
+  const chosen=new Promise(res=>idx.forEach((oi,k)=>{const b=document.createElement("button");b.className="opt";
+    if(d.t==="a"){const [em,...nm]=d.o[oi].split(" ");b.innerHTML=`<span class="e">${em}</span><span>${nm.join(" ")}</span>`;b.style.animationDelay=k*.1+"s"}else b.textContent=d.o[oi];
+    b.onclick=()=>{[...box.children].forEach(x=>x.disabled=true);res({k,b})};box.appendChild(b)}));
+  const {k,b}=await chosen,right=idx.indexOf(d.r),ok=k===right;
+  b.classList.add(ok?"ok":"bad");if(!ok)box.children[right].classList.add("ok");
+  let txt=d.e,head;
+  if(ok){streak++;const pts=(d.t==="c"?15:10)+Math.min(streak-1,3)*5;
+    head=`Correto! +${pts} pontos`+(streak>=2?` (combo 🔥×${streak})`:"");sfx([523,659,784]);
+    const rc=b.getBoundingClientRect();burst(rc.left+rc.width/2,rc.top+rc.height/2,["⭐","✨","🍃","🦋"]);
+    if(d.s&&!got.has(d.s)){got.add(d.s);txt+=" 🆕 Nova descoberta: "+d.s;$("#album").textContent=got.size+"/"+TOT}
+    setScore(score+pts)}
+  else{streak=0;sfx([220,170],.18);head=d.t==="c"?"Não foi dessa vez. Você recua 1 casa.":"Não foi dessa vez.";setScore(score)}
+  $("#fbh").textContent=head;$("#fbp").textContent=txt;$("#fb").classList.add("show");
+  await fechar();if(!ok&&d.t==="c")await step(-1)}
+async function cartao(d){
+  abrir(d);const bad=d.t==="r";
+  $("#fbh").textContent=bad?"Atenção! O termômetro sobe 0,1 °C, você perde 10 pontos e recua 1 casa.":"Boa ação! O termômetro cai 0,1 °C, você ganha 10 pontos e avança 2 casas.";
+  $("#fbp").textContent=d.e;$("#fb").classList.add("show");sfx(bad?[196,147]:[392,523,659],.15);
+  await fechar();streak=0;
+  if(bad){shake();setTemp(.1);setScore(Math.max(0,score-10));await step(-1)}
+  else{setTemp(-.1);setScore(score+10);burst(innerWidth/2,innerHeight/2,["🌱","✨","🍃"]);await step(2)}}
+async function casa(){
+  const d=D[pos];if(d.t==="f")return fim();
+  if(d.t==="r"||d.t==="p")await cartao(d);else if(d.t!=="s")await pergunta(d);
+  if(pos===N-1)return fim();
+  busy=false;$("#die").disabled=false}
+$("#die").onclick=async()=>{
+  if(busy)return;busy=true;$("#die").disabled=true;
+  const f=$("#face"),faces="⚀⚁⚂⚃⚄⚅";f.classList.add("rolling");
+  let v=1;for(let k=0;k<9;k++){v=1+Math.floor(Math.random()*6);f.textContent=faces[v-1];sfx([260+k*30],.06);await sleep(80)}
+  f.classList.remove("rolling");await sleep(250);await step(v);await casa()};
+
+function fim(){
+  sfx([523,659,784,1046],.18);[0,1,2].forEach(k=>setTimeout(()=>burst(innerWidth/2,innerHeight/2,["⭐","🎉","🌍","🌿","☀️"],20),k*300));
+  setTimeout(()=>{$("#sh").textContent="Você completou a missão!";
+    $("#sp").textContent=`Pontos: ${score}. O termômetro do planeta marcou +${temp.toFixed(1).replace(".",",")} °C. ${temp<=1.2?"Você segurou o aquecimento!":"Cada ação de proteção ajuda a esfriar esse resultado."} Descobertas: ${got.size}/${TOT} ${[...got].map(x=>x.split(" ")[0]).join(" ")}`;
+    $("#sb").textContent="Jogar de novo";$("#screen").dataset.k="win";$("#screen").classList.remove("hide")},1400)}
+$("#sb").onclick=async()=>{
+  const s=$("#screen");
+  if(s.dataset.k==="win"){pos=0;score=0;streak=0;got.clear();seen.clear();setScore(0);temp=1.1;setTemp(0);$("#album").textContent="0/"+TOT;busy=false;$("#die").disabled=false;sc.scrollTo({top:0});place()}
+  s.classList.add("hide");sfx([392,523],.1);await sleep(700);await entrada()};
+place();
+</script>
+</body>
+</html>
