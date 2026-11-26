@@ -100,6 +100,7 @@ body{font-family:var(--body);color:var(--foam);background:#052e16;overflow:hidde
 .avs{display:flex;gap:10px}
 .av{font-size:2rem;width:62px;height:62px;border-radius:50%;border:3px solid transparent;background:rgba(255,255,255,.18);cursor:pointer;transition:transform .15s}
 .av:hover{transform:scale(1.12)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;max-width:420px}.chips span{background:rgba(255,255,255,.22);padding:4px 11px;border-radius:999px;font-size:.9rem}
 .av[aria-pressed=true]{border-color:var(--sand);background:rgba(255,255,255,.35);transform:scale(1.12)}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition-duration:.01ms!important}}
 </style>
@@ -115,7 +116,7 @@ body{font-family:var(--body);color:var(--foam);background:#052e16;overflow:hidde
 </div></div></div>
 
 <div id="hud">
-  <div><div class="pill"><b id="score">0</b><small>pontos</small><span id="combo"></span></div><div class="pill"><b id="temp" style="color:#86efac">🌡️ +1,1 °C</b></div></div>
+  <div><div class="pill"><b id="score">0</b><small>pontos</small><span id="combo"></span></div><div class="pill"><b id="temp" style="color:#86efac">🌡️ +1,1 °C</b></div><div class="pill"><b id="shield">🛡️ 0</b></div></div>
   <div><div class="pill"><small>📓</small><b id="album">0/0</b></div><button class="pill" id="mute" aria-label="Ligar ou desligar o som">🔊</button></div>
 </div>
 <div id="heat"></div>
@@ -132,7 +133,8 @@ body{font-family:var(--body);color:var(--foam);background:#052e16;overflow:hidde
 <div id="screen"><div class="in">
   <div class="turtle" id="pv">🐢</div>
   <h1 id="sh">Missão Clima</h1>
-  <p id="sp">Role o dado, percorra sete etapas da história do clima e descubra causas, impactos e soluções. Cuidado com o termômetro do planeta!</p>
+  <p id="sp">Role o dado, percorra sete etapas da história do clima e descubra causas, impactos e soluções. Cuidado com o termômetro do planeta! Ações 🌱 dão um escudo 🛡️ que bloqueia um risco ⚠️.</p>
+  <div class="chips" id="chips"></div>
   <div class="avs" id="avs" role="group" aria-label="Escolha seu personagem"></div>
   <button class="cta" id="sb">Começar a missão</button>
   <p class="lg">📖 pergunta · 🎯 qual destes? · 🔮 verdadeiro ou falso · ⚠️ risco · 🌱 ação</p>
@@ -184,7 +186,7 @@ const LAB={q:"📖 Pergunta",a:"🎯 Qual destes?",c:"🔮 Verdadeiro ou falso",
 const $=s=>document.querySelector(s),sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const P=i=>{const r=i>>2,c=i&3,col=r%2?3-c:c;return{x:XS[col],y:100+r*150}};
 const sc=$("#scroller"),world=$("#world"),tok=$("#tok"),prog=$("#prog"),TOT=D.filter(x=>x.s).length;
-let pos=0,score=0,streak=0,busy=false,L=0,lens=[],nodes=[],av="🐢",seen=new Set,got=new Set,AC,mute=false;
+let missed=[],shield=0,pos=0,score=0,streak=0,busy=false,L=0,lens=[],nodes=[],av="🐢",seen=new Set,got=new Set,AC,mute=false;
 
 function sfx(notes,t=.12){if(mute)return;try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();
   notes.forEach((f,i)=>{const o=AC.createOscillator(),g=AC.createGain(),s=AC.currentTime+i*t;o.type="triangle";o.frequency.value=f;
@@ -228,11 +230,13 @@ async function step(n){
     tok.animate([{transform:"translate(-50%,-50%)"},{transform:"translate(-50%,-85%) scale(1.15)"},{transform:"translate(-50%,-50%)"}],{duration:300});await sleep(310)}
   nodes[pos].classList.remove("pop");void nodes[pos].offsetWidth;nodes[pos].classList.add("pop");await sleep(200);
   if(dir>0)await entrada()}
-async function entrada(){
-  const z=pos>>2;if(seen.has(z))return;seen.add(z);
-  $("#banner").style.setProperty("--zc",Z[z].c[0]);$("#be").textContent=Z[z].i;$("#bn").textContent=Z[z].n;$("#bf").textContent=Z[z].f;
+async function aviso(cor,em,tit,txt){
+  $("#banner").style.setProperty("--zc",cor);$("#be").textContent=em;$("#bn").textContent=tit;$("#bf").textContent=txt;
   sfx([392,494,587,784],.14);$("#banner").classList.add("show");
   await Promise.race([sleep(4200),new Promise(r=>$("#banner").onclick=r)]);$("#banner").classList.remove("show");await sleep(450)}
+async function entrada(){
+  const z=pos>>2;if(seen.has(z))return;seen.add(z);await aviso(Z[z].c[0],Z[z].i,Z[z].n,Z[z].f)}
+function setShield(v){shield=Math.max(0,Math.min(2,v));const t=$("#shield");t.textContent="🛡️ "+shield;t.animate([{transform:"scale(1)"},{transform:"scale(1.35)"},{transform:"scale(1)"}],{duration:400})}
 function setScore(v){score=v;const s=$("#score");s.textContent=v;s.animate([{transform:"scale(1)"},{transform:"scale(1.4)"},{transform:"scale(1)"}],{duration:350});
   $("#combo").textContent=streak>=2?"🔥×"+streak:""}
 function burst(x,y,chars,n=14){
@@ -250,8 +254,8 @@ function shake(){const o=$("#ocean");o.classList.add("shake");setTimeout(()=>o.c
 function abrir(d){const ch=$("#chip");ch.textContent=LAB[d.t];ch.style.setProperty("--c",COL[d.t]);$("#qtext").textContent=d.p;
   $("#fb").classList.remove("show");$("#opts").innerHTML="";$("#opts").className=d.t==="a"?"grid":"";$("#modal").classList.add("open")}
 async function fechar(){await new Promise(res=>$("#next").onclick=res);$("#modal").classList.remove("open");await sleep(350)}
-async function pergunta(d){
-  abrir(d);const box=$("#opts"),idx=d.o.map((_,i)=>i);
+async function pergunta(d,rev=false){
+  abrir(d);if(rev)$("#chip").textContent="🔁 Revisão · "+LAB[d.t];const box=$("#opts"),idx=d.o.map((_,i)=>i);
   if(d.t!=="c")idx.sort(()=>Math.random()-.5);
   const chosen=new Promise(res=>idx.forEach((oi,k)=>{const b=document.createElement("button");b.className="opt";
     if(d.t==="a"){const [em,...nm]=d.o[oi].split(" ");b.innerHTML=`<span class="e">${em}</span><span>${nm.join(" ")}</span>`;b.style.animationDelay=k*.1+"s"}else b.textContent=d.o[oi];
@@ -259,21 +263,22 @@ async function pergunta(d){
   const {k,b}=await chosen,right=idx.indexOf(d.r),ok=k===right;
   b.classList.add(ok?"ok":"bad");if(!ok)box.children[right].classList.add("ok");
   let txt=d.e,head;
-  if(ok){streak++;const pts=(d.t==="c"?15:10)+Math.min(streak-1,3)*5;
-    head=`Correto! +${pts} pontos`+(streak>=2?` (combo 🔥×${streak})`:"");sfx([523,659,784]);
+  if(ok){if(!rev)streak++;const pts=rev?5:(d.t==="c"?15:10)+Math.min(streak-1,3)*5;
+    head=`Correto! +${pts} pontos`+(!rev&&streak>=2?` (combo 🔥×${streak})`:"");sfx([523,659,784]);
     const rc=b.getBoundingClientRect();burst(rc.left+rc.width/2,rc.top+rc.height/2,["⭐","✨","🍃","🦋"]);
     if(d.s&&!got.has(d.s)){got.add(d.s);txt+=" 🆕 Nova descoberta: "+d.s;$("#album").textContent=got.size+"/"+TOT}
     setScore(score+pts)}
-  else{streak=0;sfx([220,170],.18);head=d.t==="c"?"Não foi dessa vez. Você recua 1 casa.":"Não foi dessa vez.";setScore(score)}
+  else{if(!rev){streak=0;missed.push(d)}sfx([220,170],.18);
+    head=rev?"Quase! Leia a explicação para fixar.":d.t==="c"?"Não foi dessa vez. Você recua 1 casa. Essa pergunta volta na revisão!":"Não foi dessa vez. Essa pergunta volta na revisão!";setScore(score)}
   $("#fbh").textContent=head;$("#fbp").textContent=txt;$("#fb").classList.add("show");
-  await fechar();if(!ok&&d.t==="c")await step(-1)}
+  await fechar();if(!ok&&d.t==="c"&&!rev)await step(-1)}
 async function cartao(d){
-  abrir(d);const bad=d.t==="r";
-  $("#fbh").textContent=bad?"Atenção! O termômetro sobe 0,1 °C, você perde 10 pontos e recua 1 casa.":"Boa ação! O termômetro cai 0,1 °C, você ganha 10 pontos e avança 2 casas.";
-  $("#fbp").textContent=d.e;$("#fb").classList.add("show");sfx(bad?[196,147]:[392,523,659],.15);
+  abrir(d);const bad=d.t==="r",prot=bad&&shield>0;
+  $("#fbh").textContent=bad?(prot?"Seu escudo 🛡️ protegeu você! O risco foi evitado.":"Atenção! O termômetro sobe 0,1 °C, você perde 10 pontos e recua 1 casa."):"Boa ação! O termômetro cai 0,1 °C, você ganha 10 pontos, avança 2 casas e ganha um escudo 🛡️.";
+  $("#fbp").textContent=d.e+(prot?" Quem se prepara sofre menos com os impactos!":"");$("#fb").classList.add("show");sfx(bad&&!prot?[196,147]:[392,523,659],.15);
   await fechar();streak=0;
-  if(bad){shake();setTemp(.1);setScore(Math.max(0,score-10));await step(-1)}
-  else{setTemp(-.1);setScore(score+10);burst(innerWidth/2,innerHeight/2,["🌱","✨","🍃"]);await step(2)}}
+  if(bad){if(prot){setShield(shield-1);burst(innerWidth/2,innerHeight/2,["🛡️","✨"])}else{shake();setTemp(.1);setScore(Math.max(0,score-10));await step(-1)}}
+  else{setTemp(-.1);setScore(score+10);setShield(shield+1);burst(innerWidth/2,innerHeight/2,["🌱","✨","🍃"]);await step(2)}}
 async function casa(){
   const d=D[pos];if(d.t==="f")return fim();
   if(d.t==="r"||d.t==="p")await cartao(d);else if(d.t!=="s")await pergunta(d);
@@ -285,14 +290,18 @@ $("#die").onclick=async()=>{
   let v=1;for(let k=0;k<9;k++){v=1+Math.floor(Math.random()*6);f.textContent=faces[v-1];sfx([260+k*30],.06);await sleep(80)}
   f.classList.remove("rolling");await sleep(250);await step(v);await casa()};
 
-function fim(){
+async function fim(){
+  if(missed.length){await aviso("#7c3aed","🔁","Rodada de revisão","Vamos rever o que ficou para trás. Sem risco: cada acerto vale +5 pontos!");
+    for(const d of missed.splice(0))await pergunta(d,true)}
+  const medal=temp<=1.2?"🥇 Guardião do Clima":temp<=1.4?"🥈 Defensor do Clima":"🥉 Aprendiz do Clima";
   sfx([523,659,784,1046],.18);[0,1,2].forEach(k=>setTimeout(()=>burst(innerWidth/2,innerHeight/2,["⭐","🎉","🌍","🌿","☀️"],20),k*300));
   setTimeout(()=>{$("#sh").textContent="Você completou a missão!";
-    $("#sp").textContent=`Pontos: ${score}. O termômetro do planeta marcou +${temp.toFixed(1).replace(".",",")} °C. ${temp<=1.2?"Você segurou o aquecimento!":"Cada ação de proteção ajuda a esfriar esse resultado."} Descobertas: ${got.size}/${TOT} ${[...got].map(x=>x.split(" ")[0]).join(" ")}`;
+    $("#sp").textContent=`${medal}! Pontos: ${score}. O termômetro do planeta marcou +${temp.toFixed(1).replace(".",",")} °C. ${temp<=1.2?"Você segurou o aquecimento!":"Cada ação de proteção ajuda a esfriar esse resultado."} Você aprendeu ${got.size} de ${TOT} assuntos:`;
+    const ch=$("#chips");ch.innerHTML="";[...got].forEach(x=>{const e=document.createElement("span");e.textContent=x;ch.appendChild(e)});
     $("#sb").textContent="Jogar de novo";$("#screen").dataset.k="win";$("#screen").classList.remove("hide")},1400)}
 $("#sb").onclick=async()=>{
   const s=$("#screen");
-  if(s.dataset.k==="win"){pos=0;score=0;streak=0;got.clear();seen.clear();setScore(0);temp=1.1;setTemp(0);$("#album").textContent="0/"+TOT;busy=false;$("#die").disabled=false;sc.scrollTo({top:0});place()}
+  if(s.dataset.k==="win"){pos=0;score=0;streak=0;got.clear();seen.clear();missed.length=0;$("#chips").innerHTML="";setShield(0);setScore(0);temp=1.1;setTemp(0);$("#album").textContent="0/"+TOT;busy=false;$("#die").disabled=false;sc.scrollTo({top:0});place()}
   s.classList.add("hide");sfx([392,523],.1);await sleep(700);await entrada()};
 place();
 </script>
